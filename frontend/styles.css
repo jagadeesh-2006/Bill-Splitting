@@ -1,0 +1,34 @@
+body {
+  font-family: Arial, sans-serif;
+  padding: 20px;
+  max-width: 600px;
+  margin: auto;
+}
+
+input, button {
+  margin: 8px 0;
+  padding: 10px;
+  width: 100%;
+  max-width: 300px;
+  box-sizing: border-box;
+}
+
+button {
+  cursor: pointer;
+}
+
+h2 {
+  margin-bottom: 20px;
+}
+
+#groups-ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+#groups-ul li {
+  background: #eee;
+  padding: 8px;
+  margin-bottom: 6px;
+  border-radius: 4px;
+}

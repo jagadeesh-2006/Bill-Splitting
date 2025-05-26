@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>dashboard</title>
+  <link rel="stylesheet" href="css/dashboard.css">
+</head>
+  
+<body>
+  <h2>Welcome, <span id="username"></span>!</h2>
+  <button id="logout-btn">Logout</button>
+
+  <div id="group-creation">
+    <h3>Create New Group</h3>
+    <form id="group-form">
+      <input type="text" id="new-group-name" placeholder="Group Name" required />
+      <input type="text" id="member-phones" placeholder="Member Phones (comma separated)" required />
+      <button type="submit">Create Group</button>
+    </form>
+  </div>
+
+  <div id="groups-list">
+    <h3>Your Groups</h3>
+    <ul id="groups-ul"></ul>
+  </div>
+
+  <div id="group-detail" style="display:none;">
+    <button id="back-btn">Back to Groups</button>
+    <h3 id="group-name"></h3>
+
+    <h4>Members</h4>
+    <ul id="members-ul"></ul>
+
+    <h4>Expenses</h4>
+    <ul id="expenses-ul"></ul>
+
+    <h4>Add Expense</h4>
+    <form id="expense-form">
+      <div>
+        <label for="expense-description">Description:</label>
+        <input type="text" id="expense-description" required />
+      </div>
+      <div>
+        <label for="expense-amount">Amount:</label>
+        <input type="number" id="expense-amount" step="0.01" min="0" required />
+      </div>
+      <div>
+        <label for="expense-payer">Paid By:</label>
+        <select id="expense-payer" required></select>
+      </div>
+
+      <h5>Split Type:</h5>
+      <label><input type="radio" name="split-type" value="equal" checked /> Equal</label>
+      <label><input type="radio" name="split-type" value="percentage" /> Percentage</label>
+      <label><input type="radio" name="split-type" value="custom" /> Custom</label>
+
+      <div id="split-inputs" style="margin-top: 1rem;"></div>
+
+      <button type="submit">Add Expense</button>
+    </form>
+  </div>
+
+  <script src="scripts/dashboard.js"></script>
+</body>
+
+
+</html>
