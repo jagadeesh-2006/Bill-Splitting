@@ -1,17 +1,30 @@
+package main
+
 import (
+	"fmt"
 	"os"
-	"config"
+
+	"github.com/gin-gonic/gin"
+	"github.com/jagadeesh-2006/Bill-Splitting/go-backend/config"
+	"github.com/jagadeesh-2006/Bill-Splitting/go-backend/internals/handlers"
+	"github.com/jagadeesh-2006/Bill-Splitting/go-backend/internals/router"
 )
 
-func main(){
-	config.Init()
+func main() {
+	if os.Getenv("GIN_MODE") == "" {
+		gin.SetMode(gin.ReleaseMode)
+	}
 
-	r := setupRouter()
+	handlers.InitDB(config.DB)
+
+	r := router.SetupRouter()
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080" 
+		port = "8080"
 	}
-	r.Run(":" + port) 
-	fmt.Printf("server is running on port %d", port)
-
+	if err := r.Run(":" + port); err != nil {
+		fmt.Printf("failed to run server: %v\n", err)
+		return
+	}
+	fmt.Printf("server is running on port %s\n", port)
 }

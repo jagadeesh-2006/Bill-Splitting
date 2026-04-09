@@ -1,26 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard — Split</title>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #0a0a0f;
-      --surface: #12121a;
-      --card: #1a1a26;
-      --card-hover: #1f1f30;
-      --accent: #c8f55a;
-      --accent-dim: rgba(200, 245, 90, 0.12);
-      --text: #f0f0f5;
-      --muted: #6b6b80;
-      --border: rgba(255,255,255,0.06);
-      --input-bg: rgba(255,255,255,0.04);
-      --input-border: rgba(255,255,255,0.1);
-      --danger: #f55a8c;
+      --bg:           #0a0a0f;
+      --surface:      #12121a;
+      --card:         #1a1a26;
+      --card-hover:   #1f1f30;
+      --accent:       #c8f55a;
+      --accent-dim:   rgba(200,245,90,0.10);
+      --accent-glow:  rgba(200,245,90,0.25);
+      --text:         #f0f0f5;
+      --muted:        #6b6b80;
+      --border:       rgba(255,255,255,0.06);
+      --input-bg:     rgba(255,255,255,0.04);
+      --input-border: rgba(255,255,255,0.10);
+      --danger:       #f55a8c;
+      --danger-dim:   rgba(245,90,140,0.12);
+      --success:      #5af5a0;
+      --success-dim:  rgba(90,245,160,0.10);
     }
 
     body {
@@ -32,117 +36,77 @@
 
     body::before {
       content: '';
-      position: fixed;
-      inset: 0;
+      position: fixed; inset: 0;
       background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-      pointer-events: none;
-      z-index: 9999;
-      opacity: 0.4;
+      pointer-events: none; z-index: 9999; opacity: 0.4;
     }
 
-    /* ── NAV ── */
+    /* ── NAV ─────────────────────────────────────────── */
     nav {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
       padding: 1.1rem 2.5rem;
       backdrop-filter: blur(20px);
-      background: rgba(10,10,15,0.8);
+      background: rgba(10,10,15,0.85);
       border-bottom: 1px solid var(--border);
     }
-
     .logo {
       font-family: 'Playfair Display', serif;
-      font-size: 1.3rem;
-      font-weight: 900;
-      color: var(--text);
-      text-decoration: none;
+      font-size: 1.3rem; font-weight: 900;
+      color: var(--text); text-decoration: none;
     }
     .logo span { color: var(--accent); }
-
-    .nav-right {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-
-    .welcome-text {
-      font-size: 0.875rem;
-      color: var(--muted);
-    }
-    .welcome-text strong {
-      color: var(--text);
-      font-weight: 500;
-    }
-
+    .nav-right { display: flex; align-items: center; gap: 1rem; }
+    .welcome-text { font-size: 0.875rem; color: var(--muted); }
+    .welcome-text strong { color: var(--text); font-weight: 500; }
     #logout-btn {
-      padding: 0.5rem 1.2rem;
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--muted);
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.85rem;
-      cursor: pointer;
-      transition: all 0.2s;
+      padding: 0.5rem 1.2rem; border-radius: 999px;
+      border: 1px solid var(--border); background: transparent;
+      color: var(--muted); font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem; cursor: pointer; transition: all 0.2s;
     }
     #logout-btn:hover { color: var(--danger); border-color: rgba(245,90,140,0.4); }
 
-    /* ── LAYOUT ── */
+    /* ── LAYOUT ──────────────────────────────────────── */
     .layout {
       display: grid;
-      grid-template-columns: 340px 1fr;
-      gap: 0;
+      grid-template-columns: 360px 1fr;
       min-height: calc(100vh - 61px);
     }
 
-    /* ── SIDEBAR ── */
+    /* ── SIDEBAR ─────────────────────────────────────── */
     .sidebar {
       border-right: 1px solid var(--border);
       padding: 2rem 1.5rem;
-      display: flex;
-      flex-direction: column;
-      gap: 2rem;
-      animation: fadeUp 0.5s ease both;
+      display: flex; flex-direction: column; gap: 2rem;
+      overflow-y: auto;
+      animation: fadeUp 0.4s ease both;
     }
-
     .section-label {
-      font-size: 0.7rem;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      font-weight: 500;
-      margin-bottom: 1rem;
+      font-size: 0.68rem; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.14em;
+      font-weight: 600; margin-bottom: 0.9rem;
     }
 
-    /* Create group form */
+    /* Create group card */
     .create-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      padding: 1.5rem;
-      position: relative;
-      overflow: hidden;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 18px; padding: 1.5rem;
+      position: relative; overflow: hidden;
     }
     .create-card::before {
       content: '';
-      position: absolute;
-      inset: 0;
+      position: absolute; inset: 0;
       background: radial-gradient(circle at top left, var(--accent-dim), transparent 70%);
       pointer-events: none;
     }
-
     .create-card h3 {
       font-family: 'Playfair Display', serif;
-      font-size: 1.05rem;
-      font-weight: 700;
-      margin-bottom: 1rem;
+      font-size: 1.05rem; font-weight: 700; margin-bottom: 1.1rem;
     }
 
-    input, select {
+    /* ── INPUTS ──────────────────────────────────────── */
+    input, select, textarea {
       width: 100%;
       padding: 0.7rem 0.9rem;
       background: var(--input-bg);
@@ -153,286 +117,346 @@
       font-size: 0.875rem;
       outline: none;
       transition: border-color 0.2s, background 0.2s;
-      margin-bottom: 0.75rem;
     }
-    input::placeholder { color: var(--muted); }
-    input:focus, select:focus {
+    input::placeholder, textarea::placeholder { color: var(--muted); }
+    input:focus, select:focus, textarea:focus {
       border-color: rgba(200,245,90,0.5);
       background: rgba(200,245,90,0.04);
     }
     select option { background: #1a1a26; }
+    textarea { resize: vertical; min-height: 60px; }
 
-    .btn-accent {
-      width: 100%;
-      padding: 0.7rem;
-      border-radius: 10px;
-      border: none;
-      background: var(--accent);
-      color: #0a0a0f;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.9rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-      margin-top: 0.25rem;
+    /* Member entry rows */
+    .member-row {
+      display: grid; grid-template-columns: 1fr 1fr auto;
+      gap: 0.5rem; align-items: center; margin-bottom: 0.5rem;
     }
-    .btn-accent:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(200,245,90,0.3); }
+    .member-row input { margin-bottom: 0; }
+    .remove-member-btn {
+      width: 32px; height: 32px; border-radius: 8px;
+      border: 1px solid var(--border); background: transparent;
+      color: var(--muted); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; transition: all 0.2s; flex-shrink: 0;
+    }
+    .remove-member-btn:hover { color: var(--danger); border-color: rgba(245,90,140,0.4); background: var(--danger-dim); }
+
+    .add-member-btn {
+      width: 100%; padding: 0.55rem;
+      border-radius: 10px;
+      border: 1px dashed rgba(200,245,90,0.3);
+      background: transparent;
+      color: var(--accent); font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem; font-weight: 500; cursor: pointer;
+      transition: all 0.2s; margin-bottom: 0.75rem;
+    }
+    .add-member-btn:hover { background: var(--accent-dim); border-style: solid; }
+
+    /* Member headers */
+    .member-header {
+      display: grid; grid-template-columns: 1fr 1fr auto;
+      gap: 0.5rem; margin-bottom: 0.4rem;
+    }
+    .member-header span {
+      font-size: 0.68rem; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600;
+    }
+
+    /* Buttons */
+    .btn-accent {
+      width: 100%; padding: 0.72rem;
+      border-radius: 10px; border: none;
+      background: var(--accent); color: #0a0a0f;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem; font-weight: 600;
+      cursor: pointer; transition: all 0.2s; margin-top: 0.25rem;
+    }
+    .btn-accent:hover { transform: translateY(-1px); box-shadow: 0 6px 20px var(--accent-glow); }
+    .btn-accent:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    .btn-ghost {
+      padding: 0.5rem 1.1rem; border-radius: 999px;
+      border: 1px solid var(--border); background: transparent;
+      color: var(--muted); font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem; cursor: pointer; transition: all 0.2s;
+      display: inline-flex; align-items: center; gap: 0.3rem;
+    }
+    .btn-ghost:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
 
     /* Groups list */
     .groups-section h3 {
       font-family: 'Playfair Display', serif;
-      font-size: 1.05rem;
-      font-weight: 700;
-      margin-bottom: 1rem;
+      font-size: 1.05rem; font-weight: 700; margin-bottom: 1rem;
     }
-
     #groups-ul {
       list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
+      display: flex; flex-direction: column; gap: 0.5rem;
     }
-
     #groups-ul li {
-      padding: 0.85rem 1rem;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background: var(--card);
-      cursor: pointer;
-      font-size: 0.9rem;
+      padding: 0.85rem 1rem; border-radius: 12px;
+      border: 1px solid var(--border); background: var(--card);
+      cursor: pointer; font-size: 0.9rem;
       transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
+      display: flex; align-items: center; gap: 0.6rem;
     }
-    #groups-ul li::before {
-      content: '◈';
-      color: var(--accent);
-      font-size: 0.7rem;
-    }
+    #groups-ul li::before { content: '◈'; color: var(--accent); font-size: 0.7rem; }
     #groups-ul li:hover {
       border-color: rgba(200,245,90,0.3);
       background: var(--card-hover);
       transform: translateX(3px);
     }
+    #groups-ul li.active {
+      border-color: rgba(200,245,90,0.5);
+      background: var(--accent-dim);
+    }
 
-    /* ── MAIN ── */
+    /* ── MAIN ────────────────────────────────────────── */
     .main {
-      padding: 2.5rem;
-      animation: fadeUp 0.5s ease 0.1s both;
+      padding: 2.5rem; overflow-y: auto;
+      animation: fadeUp 0.4s ease 0.1s both;
     }
 
     /* Empty state */
     .empty-state {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      min-height: 400px;
-      text-align: center;
-      gap: 0.75rem;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      height: 100%; min-height: 400px;
+      text-align: center; gap: 0.75rem;
     }
-    .empty-icon { font-size: 3rem; opacity: 0.3; }
+    .empty-icon { font-size: 3rem; opacity: 0.25; }
     .empty-state h3 {
       font-family: 'Playfair Display', serif;
-      font-size: 1.4rem;
-      font-weight: 700;
-      color: var(--muted);
+      font-size: 1.4rem; font-weight: 700; color: var(--muted);
     }
     .empty-state p { font-size: 0.875rem; color: var(--muted); font-weight: 300; }
 
-    /* Group detail */
+    /* ── GROUP DETAIL ────────────────────────────────── */
     #group-detail { display: none; }
 
     .detail-header {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      margin-bottom: 2rem;
+      display: flex; align-items: center;
+      gap: 1rem; margin-bottom: 2rem;
     }
-
-    #back-btn {
-      padding: 0.5rem 1rem;
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--muted);
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.8rem;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      gap: 0.3rem;
-    }
-    #back-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
-
     #group-name {
       font-family: 'Playfair Display', serif;
-      font-size: 1.8rem;
-      font-weight: 900;
-      letter-spacing: -0.03em;
+      font-size: 1.8rem; font-weight: 900; letter-spacing: -0.03em;
     }
 
-    .detail-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1.5rem;
+    /* Tabs */
+    .tabs {
+      display: flex; gap: 0.25rem;
+      border-bottom: 1px solid var(--border);
       margin-bottom: 2rem;
     }
-
-    .detail-card {
-      background: var(--card);
+    .tab-btn {
+      padding: 0.65rem 1.3rem; border-radius: 10px 10px 0 0;
+      border: none; background: transparent;
+      color: var(--muted); font-family: 'DM Sans', sans-serif;
+      font-size: 0.875rem; font-weight: 500; cursor: pointer;
+      transition: all 0.2s; position: relative; bottom: -1px;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active {
+      color: var(--accent);
       border: 1px solid var(--border);
-      border-radius: 18px;
-      padding: 1.5rem;
+      border-bottom-color: var(--bg);
+      background: var(--bg);
     }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
 
+    /* ── OVERVIEW TAB ────────────────────────────────── */
+    .overview-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem; margin-bottom: 2rem;
+    }
+    .detail-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 18px; padding: 1.5rem;
+    }
     .detail-card h4 {
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--muted);
-      font-weight: 500;
-      margin-bottom: 1rem;
+      font-size: 0.72rem; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--muted);
+      font-weight: 600; margin-bottom: 1rem;
     }
-
     #members-ul, #expenses-ul {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
+      list-style: none; display: flex;
+      flex-direction: column; gap: 0;
     }
-
     #members-ul li {
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-      font-size: 0.875rem;
-      padding: 0.5rem 0;
+      display: flex; align-items: center; gap: 0.65rem;
+      font-size: 0.875rem; padding: 0.55rem 0;
       border-bottom: 1px solid var(--border);
-      color: var(--text);
     }
     #members-ul li:last-child { border-bottom: none; }
-
     .avatar {
-      width: 28px; height: 28px;
-      border-radius: 50%;
+      width: 30px; height: 30px; border-radius: 50%;
       background: var(--accent-dim);
       border: 1px solid rgba(200,245,90,0.2);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.7rem;
-      color: var(--accent);
-      font-weight: 600;
-      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.68rem; color: var(--accent);
+      font-weight: 700; flex-shrink: 0; text-transform: uppercase;
     }
+    .member-info { display: flex; flex-direction: column; gap: 0.1rem; }
+    .member-name { font-size: 0.875rem; font-weight: 500; }
+    .member-phone { font-size: 0.75rem; color: var(--muted); }
 
     #expenses-ul li {
-      display: flex;
-      align-items: center;
+      display: flex; align-items: center;
       justify-content: space-between;
-      font-size: 0.875rem;
-      padding: 0.6rem 0;
+      padding: 0.65rem 0;
       border-bottom: 1px solid var(--border);
     }
     #expenses-ul li:last-child { border-bottom: none; }
-
     .expense-info { display: flex; flex-direction: column; gap: 0.15rem; }
-    .expense-desc { font-weight: 500; }
+    .expense-desc { font-size: 0.875rem; font-weight: 500; }
     .expense-meta { font-size: 0.75rem; color: var(--muted); }
-    .expense-amount { font-family: 'Playfair Display', serif; font-weight: 700; color: var(--accent); }
-
-    /* Add expense form */
-    .expense-form-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      padding: 1.5rem;
+    .expense-amount {
+      font-family: 'Playfair Display', serif;
+      font-weight: 700; color: var(--accent); font-size: 1rem;
     }
 
+    /* ── ADD EXPENSE TAB ─────────────────────────────── */
+    .expense-form-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 18px; padding: 1.75rem; max-width: 640px;
+    }
     .expense-form-card h4 {
       font-family: 'Playfair Display', serif;
-      font-size: 1.1rem;
-      font-weight: 700;
-      margin-bottom: 1.25rem;
+      font-size: 1.15rem; font-weight: 700; margin-bottom: 1.4rem;
     }
-
-    .form-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+    .field { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1rem; }
+    .field label {
+      font-size: 0.72rem; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.09em; font-weight: 600;
     }
+    .field input, .field select { margin-bottom: 0; }
 
-    .field { margin-bottom: 0; }
-
-    label {
-      display: block;
-      font-size: 0.75rem;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.07em;
-      font-weight: 500;
-      margin-bottom: 0.4rem;
+    /* Split type pills */
+    .split-type-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .split-pill {
+      display: flex; align-items: center; gap: 0.4rem;
+      padding: 0.5rem 1.1rem; border-radius: 999px;
+      border: 1px solid var(--input-border); cursor: pointer;
+      font-size: 0.8rem; font-weight: 500; color: var(--muted);
+      transition: all 0.2s; user-select: none;
     }
-
-    /* Split type radios */
-    .split-type-row {
-      display: flex;
-      gap: 0.5rem;
-      margin-bottom: 1rem;
-      flex-wrap: wrap;
-    }
-
-    .split-type-row label {
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-      padding: 0.5rem 1rem;
-      border-radius: 999px;
-      border: 1px solid var(--input-border);
-      cursor: pointer;
-      font-size: 0.8rem;
-      font-weight: 500;
-      text-transform: none;
-      letter-spacing: 0;
-      color: var(--muted);
-      transition: all 0.2s;
-    }
-    .split-type-row label:has(input:checked) {
+    .split-pill:has(input:checked) {
       border-color: rgba(200,245,90,0.5);
-      background: var(--accent-dim);
-      color: var(--accent);
+      background: var(--accent-dim); color: var(--accent);
     }
-    .split-type-row input[type="radio"] { accent-color: var(--accent); width: auto; margin: 0; }
+    .split-pill input[type="radio"] { display: none; }
 
-    #split-inputs {
-      margin-bottom: 1rem;
+    .split-member-row {
+      display: grid; grid-template-columns: 1fr auto;
+      align-items: center; gap: 0.75rem;
+      padding: 0.5rem 0; border-bottom: 1px solid var(--border);
     }
-    #split-inputs input { margin-bottom: 0.5rem; }
+    .split-member-row:last-child { border-bottom: none; }
+    .split-member-name { font-size: 0.875rem; font-weight: 500; }
+    .split-member-row input { width: 120px; margin: 0; }
 
-    /* Result messages */
-    #register-result, #login-result {
-      margin-top: 0.75rem;
-      font-size: 0.82rem;
-      text-align: center;
-      color: var(--muted);
+    /* ── BALANCES TAB ────────────────────────────────── */
+    .balances-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem; margin-bottom: 2rem;
     }
-    .error { color: var(--danger) !important; }
-    .success { color: var(--accent) !important; }
+    .balance-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 1.25rem;
+      display: flex; flex-direction: column; gap: 0.5rem;
+      transition: border-color 0.2s;
+    }
+    .balance-card.positive { border-color: rgba(90,245,160,0.25); background: var(--success-dim); }
+    .balance-card.negative { border-color: rgba(245,90,140,0.25); background: var(--danger-dim); }
+    .balance-card.zero { border-color: var(--border); }
+    .balance-name { font-size: 0.9rem; font-weight: 600; }
+    .balance-amount {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.6rem; font-weight: 900; letter-spacing: -0.03em;
+    }
+    .balance-card.positive .balance-amount { color: var(--success); }
+    .balance-card.negative .balance-amount { color: var(--danger); }
+    .balance-card.zero .balance-amount { color: var(--muted); }
+    .balance-label { font-size: 0.72rem; color: var(--muted); font-weight: 500; }
+
+    /* ── SETTLE UP TAB ───────────────────────────────── */
+    .settle-layout {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;
+    }
+    .settle-form-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 18px; padding: 1.75rem;
+    }
+    .settle-form-card h4 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.15rem; font-weight: 700; margin-bottom: 1.4rem;
+    }
+
+    /* Payment history */
+    .history-list {
+      display: flex; flex-direction: column; gap: 0.75rem;
+    }
+    .history-item {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 1rem 1.25rem;
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 1rem;
+      animation: fadeUp 0.3s ease both;
+    }
+    .history-arrow {
+      display: flex; align-items: center; gap: 0.5rem;
+      font-size: 0.875rem;
+    }
+    .history-from { font-weight: 600; }
+    .history-arrow-icon { color: var(--muted); font-size: 0.8rem; }
+    .history-to { font-weight: 600; color: var(--accent); }
+    .history-right { text-align: right; }
+    .history-amount {
+      font-family: 'Playfair Display', serif;
+      font-weight: 700; font-size: 1.05rem; color: var(--success);
+    }
+    .history-note { font-size: 0.75rem; color: var(--muted); margin-top: 0.15rem; }
+    .history-date { font-size: 0.72rem; color: var(--muted); }
+
+    /* Toast */
+    #toast {
+      position: fixed; bottom: 2rem; right: 2rem;
+      padding: 0.8rem 1.4rem; border-radius: 12px;
+      font-size: 0.875rem; font-weight: 500;
+      background: var(--card); border: 1px solid var(--border);
+      color: var(--text); z-index: 10000;
+      transform: translateY(20px); opacity: 0;
+      transition: all 0.3s; pointer-events: none;
+    }
+    #toast.show { transform: translateY(0); opacity: 1; }
+    #toast.success { border-color: rgba(90,245,160,0.4); color: var(--success); }
+    #toast.error { border-color: rgba(245,90,140,0.4); color: var(--danger); }
+
+    /* Spinner */
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(10,10,15,0.3);
+      border-top-color: #0a0a0f;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      display: inline-block;
+    }
 
     @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(16px); }
-      to { opacity: 1; transform: translateY(0); }
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
 
-    @media (max-width: 768px) {
+    @media (max-width: 900px) {
       .layout { grid-template-columns: 1fr; }
       .sidebar { border-right: none; border-bottom: 1px solid var(--border); }
-      .detail-grid { grid-template-columns: 1fr; }
-      .form-row { grid-template-columns: 1fr; }
+      .overview-grid, .settle-layout, .form-row { grid-template-columns: 1fr; }
       nav { padding: 1rem 1.25rem; }
       .main { padding: 1.5rem; }
     }
@@ -451,102 +475,175 @@
 
   <div class="layout">
 
-    <!-- SIDEBAR -->
+    <!-- ── SIDEBAR ── -->
     <aside class="sidebar">
 
-      <!-- Create Group -->
+      <!-- Create group -->
       <div>
         <p class="section-label">New Group</p>
-        <div class="create-card" id="group-creation">
+        <div class="create-card">
           <h3>Create a group</h3>
           <form id="group-form">
-            <input type="text" id="new-group-name" placeholder="Group name" required />
-            <input type="text" id="member-phones" placeholder="Member phones (comma separated)" required />
-            <button type="submit" class="btn-accent">Create group</button>
+            <div class="field">
+              <label>Group name</label>
+              <input type="text" id="new-group-name" placeholder="e.g. Goa Trip" required />
+            </div>
+
+            <div class="field">
+              <label>Members</label>
+              <div class="member-header">
+                <span>Name</span>
+                <span>Phone</span>
+                <span></span>
+              </div>
+              <div id="members-input-list"></div>
+              <button type="button" class="add-member-btn" id="add-member-btn">+ Add member</button>
+            </div>
+
+            <button type="submit" class="btn-accent" id="create-group-btn">Create group</button>
           </form>
         </div>
       </div>
 
-      <!-- Groups List -->
+      <!-- Groups list -->
       <div class="groups-section" id="groups-list">
         <p class="section-label">Your Groups</p>
-        <h3 style="display:none"></h3>
         <ul id="groups-ul"></ul>
       </div>
 
     </aside>
 
-    <!-- MAIN -->
+    <!-- ── MAIN ── -->
     <main class="main">
 
-      <!-- Empty state (shown when no group selected) -->
+      <!-- Empty state -->
       <div class="empty-state" id="empty-state">
         <div class="empty-icon">◈</div>
         <h3>Select a group</h3>
-        <p>Choose a group from the sidebar or create a new one to get started.</p>
+        <p>Choose a group from the sidebar or create a new one.</p>
       </div>
 
-      <!-- Group Detail -->
+      <!-- Group detail -->
       <div id="group-detail">
 
         <div class="detail-header">
-          <button id="back-btn">← Back</button>
+          <button class="btn-ghost" id="back-btn">← Back</button>
           <h3 id="group-name"></h3>
         </div>
 
-        <div class="detail-grid">
-          <!-- Members -->
-          <div class="detail-card">
-            <h4>Members</h4>
-            <ul id="members-ul"></ul>
-          </div>
+        <!-- Tabs -->
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="overview">Overview</button>
+          <button class="tab-btn" data-tab="add-expense">Add Expense</button>
+          <button class="tab-btn" data-tab="balances">Balances</button>
+          <button class="tab-btn" data-tab="settle">Settle Up</button>
+        </div>
 
-          <!-- Expenses -->
-          <div class="detail-card">
-            <h4>Expenses</h4>
-            <ul id="expenses-ul"></ul>
+        <!-- ── OVERVIEW TAB ── -->
+        <div class="tab-panel active" id="tab-overview">
+          <div class="overview-grid">
+            <div class="detail-card">
+              <h4>Members</h4>
+              <ul id="members-ul"></ul>
+            </div>
+            <div class="detail-card">
+              <h4>Recent Expenses</h4>
+              <ul id="expenses-ul"></ul>
+            </div>
           </div>
         </div>
 
-        <!-- Add Expense -->
-        <div class="expense-form-card">
-          <h4>Add Expense</h4>
-          <form id="expense-form">
+        <!-- ── ADD EXPENSE TAB ── -->
+        <div class="tab-panel" id="tab-add-expense">
+          <div class="expense-form-card">
+            <h4>Add an Expense</h4>
+            <form id="expense-form">
 
-            <div class="form-row" style="margin-bottom: 0.75rem;">
+              <div class="form-row">
+                <div class="field">
+                  <label>Description</label>
+                  <input type="text" id="expense-description" placeholder="e.g. Hotel booking" required />
+                </div>
+                <div class="field">
+                  <label>Amount (₹)</label>
+                  <input type="number" id="expense-amount" step="0.01" min="0.01" placeholder="0.00" required />
+                </div>
+              </div>
+
               <div class="field">
-                <label for="expense-description">Description</label>
-                <input type="text" id="expense-description" placeholder="e.g. Dinner" required />
+                <label>Paid by</label>
+                <select id="expense-payer" required></select>
               </div>
+
               <div class="field">
-                <label for="expense-amount">Amount (₹)</label>
-                <input type="number" id="expense-amount" step="0.01" min="0" placeholder="0.00" required />
+                <label>Split type</label>
+                <div class="split-type-row">
+                  <label class="split-pill"><input type="radio" name="split-type" value="equal" checked /> Equal</label>
+                  <label class="split-pill"><input type="radio" name="split-type" value="percentage" /> Percentage</label>
+                  <label class="split-pill"><input type="radio" name="split-type" value="custom" /> Custom</label>
+                </div>
+              </div>
+
+              <div id="split-inputs" style="margin-bottom: 1rem;"></div>
+
+              <button type="submit" class="btn-accent" id="add-expense-btn">Add Expense</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- ── BALANCES TAB ── -->
+        <div class="tab-panel" id="tab-balances">
+          <div id="balances-grid" class="balances-grid"></div>
+          <p style="font-size:0.8rem; color: var(--muted); margin-top: 0.5rem;">
+            Positive = owed to them &nbsp;·&nbsp; Negative = they owe others
+          </p>
+        </div>
+
+        <!-- ── SETTLE UP TAB ── -->
+        <div class="tab-panel" id="tab-settle">
+          <div class="settle-layout">
+
+            <!-- Settle form -->
+            <div class="settle-form-card">
+              <h4>Record a Payment</h4>
+              <form id="settle-form">
+                <div class="field">
+                  <label>Who paid</label>
+                  <select id="settle-from" required></select>
+                </div>
+                <div class="field">
+                  <label>Paid to</label>
+                  <select id="settle-to" required></select>
+                </div>
+                <div class="field">
+                  <label>Amount (₹)</label>
+                  <input type="number" id="settle-amount" step="0.01" min="0.01" placeholder="0.00" required />
+                </div>
+                <div class="field">
+                  <label>Note (optional)</label>
+                  <input type="text" id="settle-note" placeholder="e.g. GPay transfer" />
+                </div>
+                <button type="submit" class="btn-accent" id="settle-btn">Record Settlement</button>
+              </form>
+            </div>
+
+            <!-- Payment history -->
+            <div>
+              <p class="section-label" style="margin-bottom: 1rem;">Payment History</p>
+              <div id="history-list" class="history-list">
+                <p style="color: var(--muted); font-size: 0.875rem;">No settlements yet.</p>
               </div>
             </div>
 
-            <div style="margin-bottom: 1rem;">
-              <label for="expense-payer">Paid By</label>
-              <select id="expense-payer" required></select>
-            </div>
-
-            <div style="margin-bottom: 0.6rem;">
-              <label>Split Type</label>
-              <div class="split-type-row">
-                <label><input type="radio" name="split-type" value="equal" checked /> Equal</label>
-                <label><input type="radio" name="split-type" value="percentage" /> Percentage</label>
-                <label><input type="radio" name="split-type" value="custom" /> Custom</label>
-              </div>
-            </div>
-
-            <div id="split-inputs"></div>
-
-            <button type="submit" class="btn-accent">Add expense</button>
-          </form>
+          </div>
         </div>
 
       </div>
     </main>
   </div>
+
+  <!-- Toast -->
+  <div id="toast"></div>
 
   <script src="scripts/dashboard.js"></script>
 </body>

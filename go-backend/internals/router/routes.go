@@ -1,30 +1,39 @@
-import(
+package router
+
+import (
 	"github.com/gin-gonic/gin"
-	"github.com/jagadeesh-2006/Bill-Splitting/internals/handlers"
+	"github.com/jagadeesh-2006/Bill-Splitting/go-backend/internals/handlers"
+	"github.com/jagadeesh-2006/Bill-Splitting/go-backend/internals/middlewares"
 )
 
-func setuproutes(r *gin.Engine) {
-	//public
-	r.POST("/register", handlers.RegisterHandler) 
-	r.POST("/login", handlers.LoginHandler)
-	
+func SetupRoutes(r *gin.Engine) {
 
-	//protected routes
-	auth := r.Group("/")
-	auth.Use(handlers.AuthMiddleware()) 
+	// ── PUBLIC ROUTES ─────────────────────────────────────────────────────────
+	r.POST("/api/register", handlers.RegisterUser)
+	r.POST("/api/login", handlers.LoginUser)
 
-	//group routes
+	// Read-only — members have no accounts so these are public
+	r.GET("/api/groups/:groupId/members", handlers.GetGroupMembers)
+	r.GET("/api/expenses/:groupId", handlers.GetExpensesByGroup)
+	r.GET("/api/groups/:groupId/balances", handlers.GetBalances)
+	r.GET("/api/groups/:groupId/settlements", handlers.GetPaymentHistory)
 
-	auth.POST("/groups/create", handlers.CreateGroup) 
-	auth.GET("/groups/user/user_id", handlers.Getusergroup) 
+	// ── PROTECTED ROUTES ──────────────────────────────────────────────────────
+	// middlewares.AuthMiddleware() validates JWT and injects userID into context
+	auth := r.Group("/api")
+	auth.Use(middlewares.AuthMiddleware())
+	{
+		// Groups
+		auth.POST("/groups", handlers.CreateGroup)
+		auth.GET("/groups/creator/:userId", handlers.GetUserGroups)
 
-	//expense routes
+		// Expenses
+		auth.POST("/expenses", handlers.AddExpense)
 
-	auth.POST("/expenses/create", handlers.AddExpense) 
-	auth.GET("/expenses/group/group_id", handlers.GetGroupExpenses) 
-	//user routes
+		// Settle up
+		auth.POST("/groups/:groupId/settle", handlers.SettleUp)
 
-	auth.GET("/users",handlers.getAllusers)
-
-
+		// Users
+		auth.GET("/users", handlers.GetAllUsers)
+	}
 }

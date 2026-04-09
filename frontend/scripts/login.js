@@ -1,24 +1,59 @@
+const API = 'http://localhost:8080';
+
+// If already logged in, skip straight to dashboard
+if (localStorage.getItem('token')) {
+  window.location.href = 'dashboard.html';
+}
+
 document.getElementById('login-form').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const email = e.target.email.value.trim();
-  const password = e.target.password.value.trim();
 
-  const res = await fetch('http://localhost:5000/api/auth/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
-  });
-  const data = await res.json();
+  const email    = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const result   = document.getElementById('login-result');
+  const btn      = e.target.querySelector('.btn-submit');
 
-  const resultEl = document.getElementById('login-result');
+  result.className = '';
+  result.textContent = '';
 
-  if (res.ok) {
+  if (!email || !password) {
+    result.className = 'error';
+    result.textContent = 'Please fill in all fields.';
+    return;
+  }
+
+  btn.textContent = 'Logging in…';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(`${API}/api/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      result.className = 'error';
+      result.textContent = data.message || 'Login failed. Please try again.';
+      return;
+    }
+
+    // Save token and user to localStorage — dashboard reads these
+    localStorage.setItem('token', data.token);
     localStorage.setItem('user', JSON.stringify(data.user));
-    resultEl.textContent = 'Login successful! Redirecting...';
-    setTimeout(() => {
-      window.location.href = 'dashboard.html';
-    }, 1000);
-  } else {
-    resultEl.textContent = data.message || 'Login failed';
+
+    result.className = 'success';
+    result.textContent = 'Logged in! Redirecting…';
+
+    setTimeout(() => window.location.href = 'dashboard.html', 600);
+
+  } catch (err) {
+    result.className = 'error';
+    result.textContent = 'Could not reach server. Is it running?';
+  } finally {
+    btn.textContent = 'Log in';
+    btn.disabled = false;
   }
 });
