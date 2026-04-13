@@ -18,7 +18,7 @@ function toast(msg, type = 'success') {
 
 // ── AUTH HEADERS ──────────────────────────────────────────────────────────
 function authHeaders() {
-  return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+  return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }; // 
 }
 
 // ── STATE ─────────────────────────────────────────────────────────────────
@@ -42,6 +42,13 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 // ── LOAD GROUPS ───────────────────────────────────────────────────────────
 async function loadGroups() {
   const res = await fetch(`${API}/api/groups/creator/${user.id}`, { headers: authHeaders() });
+   if (res.status === 401) {
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    alert('Session expired. Please log in again.');
+    window.location.href = 'login.html';
+    return;
+  }
   if (!res.ok) { toast('Error loading groups', 'error'); return; }
   groups = await res.json() || [];
 

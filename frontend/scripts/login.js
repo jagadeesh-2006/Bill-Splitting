@@ -42,7 +42,11 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
 
     // Save token and user to localStorage — dashboard reads these
     localStorage.setItem('token', data.token);
-    localStorage.setItem('user', JSON.stringify(data.user));
+    localStorage.setItem('user', JSON.stringify(data.user)) ; // now wt is there in local storage is (is user id is present ?? it is  )
+    // localStorage.setItem('user', JSON.stringify({
+    //   id: data.user.ID || data.user.id,       // handle both cases
+    //   username: data.user.Username || data.user.username
+    // })); 
 
     result.className = 'success';
     result.textContent = 'Logged in! Redirecting…';

@@ -9,19 +9,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// AuthMiddleware validates the JWT token from the Authorization header
-// and injects the authenticated userID into the Gin context.
-//
-// Usage in routes.go:
-//
-//	import "github.com/jagadeesh-2006/Bill-Splitting/internals/middlewares"
-//
-//	auth := r.Group("/api")
-//	auth.Use(middlewares.AuthMiddleware())
-//
-// Handlers read the userID via:
-//
-//	userID, _ := c.Get("userID")
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
@@ -78,6 +65,7 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		// Inject into Gin context — handlers read with c.GetInt("userID")
 		c.Set("userID", int(userIDFloat))
+		c.Set("username", claims["username"]) // also set username for convenience
 		c.Next()
 	}
 }

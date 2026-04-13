@@ -15,6 +15,7 @@ func main() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
+	// config.ConnectDB()
 	handlers.InitDB(config.DB)
 
 	r := router.SetupRouter()

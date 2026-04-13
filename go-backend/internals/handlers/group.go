@@ -62,6 +62,22 @@ func CreateGroup(c *gin.Context) {
 
 	// Insert each member (name + phone, no user account needed)
 	var members []models.Member
+	//insert user by default when group is created
+	// we need to get username and phn using creatorId frim usertable and insert that as member in the group
+	var member models.Member
+	err = db.QueryRow(ctx, `
+		INSERT INTO members(group_id, name, phone)
+		VALUES($1, (SELECT username FROM users WHERE id=$2), (SELECT phone FROM users WHERE id=$2))
+		RETURNING id, group_id, name, phone
+	`, group.ID, creatorIDInt,
+	).Scan(&member.ID, &member.GroupID, &member.Name, &member.Phone)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Error adding creator as member"})
+		return
+	}
+	members = append(members, member)
+	
+
 	for _, m := range input.Members {
 		var member models.Member
 		err = db.QueryRow(ctx, `
