@@ -186,7 +186,7 @@ func GetBalances(c *gin.Context) {
 		Name   string
 		Amount float64
 	}
-	balanceMap := map[int]*memberBalance{}
+	balanceMap := map[int]*memberBalance{} // memberID -> balance info
 	for memberRows.Next() {
 		var id int
 		var name string

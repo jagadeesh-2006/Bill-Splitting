@@ -8,7 +8,7 @@ import (
 
 func SetupRoutes(r *gin.Engine) {
 
-	// ── PUBLIC ROUTES ─────────────────────────────────────────────────────────
+	//  PUBLIC ROUTES 
 	r.POST("/api/register", handlers.RegisterUser)
 	r.POST("/api/login", handlers.LoginUser)
 
@@ -18,7 +18,7 @@ func SetupRoutes(r *gin.Engine) {
 	r.GET("/api/groups/:groupId/balances", handlers.GetBalances)
 	r.GET("/api/groups/:groupId/settlements", handlers.GetPaymentHistory)
 
-	// ── PROTECTED ROUTES ──────────────────────────────────────────────────────
+	// PROTECTED ROUTES 
 	// middlewares.AuthMiddleware() validates JWT and injects userID into context
 	auth := r.Group("/api")
 	auth.Use(middlewares.AuthMiddleware())
