@@ -12,26 +12,34 @@ func SetupRoutes(r *gin.Engine) {
 	r.POST("/api/register", handlers.RegisterUser)
 	r.POST("/api/login", handlers.LoginUser)
 
-	// Read-only — members have no accounts so these are public
-	r.GET("/api/groups/:groupId/members", handlers.GetGroupMembers)
-	r.GET("/api/expenses/:groupId", handlers.GetExpensesByGroup)
-	r.GET("/api/groups/:groupId/balances", handlers.GetBalances)
-	r.GET("/api/groups/:groupId/settlements", handlers.GetPaymentHistory)
-
 	// PROTECTED ROUTES 
-	// middlewares.AuthMiddleware() validates JWT and injects userID into context
 	auth := r.Group("/api")
 	auth.Use(middlewares.AuthMiddleware())
 	{
-		// Groups
+		// Groups 
+		auth.GET("/groups/mine", handlers.GetUserGroups)
+		auth.GET("/groups/:groupId", handlers.GetGroupByID)
 		auth.POST("/groups", handlers.CreateGroup)
-		auth.GET("/groups/creator/:userId", handlers.GetUserGroups)
+		auth.PUT("/groups/:groupId", handlers.UpdateGroup)
+		auth.DELETE("/groups/:groupId", handlers.DeleteGroup)
+
+		// Members
+		auth.GET("/groups/:groupId/members", handlers.GetGroupMembers)
+		auth.POST("/groups/:groupId/members", handlers.AddMember)
+		auth.PUT("/groups/:groupId/members/:memberId", handlers.UpdateMember)
+		auth.DELETE("/groups/:groupId/members/:memberId", handlers.DeleteMember)
 
 		// Expenses
+		auth.GET("/expenses/:groupId", handlers.GetExpensesByGroup)
 		auth.POST("/expenses", handlers.AddExpense)
+		auth.PUT("/expenses/:expenseId", handlers.UpdateExpense)
+		auth.DELETE("/expenses/:expenseId", handlers.DeleteExpense)
 
 		// Settle up
+		auth.GET("/groups/:groupId/balances", handlers.GetBalances)
+		auth.GET("/groups/:groupId/settlements", handlers.GetPaymentHistory)
 		auth.POST("/groups/:groupId/settle", handlers.SettleUp)
+		auth.DELETE("/groups/:groupId/settlements/:settlementId", handlers.DeleteSettlement)
 
 		// Users
 		auth.GET("/users", handlers.GetAllUsers)
