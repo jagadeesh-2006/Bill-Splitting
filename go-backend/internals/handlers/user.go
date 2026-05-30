@@ -14,7 +14,6 @@ import (
 
 var db *pgxpool.Pool
 
-// InitDB injects the database pool — call this once from main.go
 func InitDB(pool *pgxpool.Pool) {
 	db = pool
 }

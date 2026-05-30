@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"math"
 	"net/http"
 
@@ -35,6 +36,9 @@ func AddExpense(c *gin.Context) {
 		"SELECT EXISTS(SELECT 1 FROM groups WHERE id=$1)", input.GroupID,
 	).Scan(&groupExists); err != nil || !groupExists {
 		c.JSON(http.StatusNotFound, gin.H{"message": "Group not found"})
+		return
+	}
+	if _, ok := userCanAccessGroup(c, input.GroupID); !ok {
 		return
 	}
 
@@ -118,6 +122,9 @@ func AddExpense(c *gin.Context) {
 // GetExpensesByGroup handles GET /api/expenses/:groupId
 func GetExpensesByGroup(c *gin.Context) {
 	groupID := c.Param("groupId")
+	if _, ok := userCanAccessGroup(c, groupID); !ok {
+		return
+	}
 	ctx := c.Request.Context()
 
 	expenseRows, err := db.Query(ctx, `
@@ -172,6 +179,9 @@ func GetExpensesByGroup(c *gin.Context) {
 // Net balance per member: positive = owed to them, negative = they owe
 func GetBalances(c *gin.Context) {
 	groupID := c.Param("groupId")
+	if _, ok := userCanAccessGroup(c, groupID); !ok {
+		return
+	}
 	ctx := c.Request.Context()
 
 	memberRows, err := db.Query(ctx,
@@ -279,6 +289,9 @@ func GetBalances(c *gin.Context) {
 // SettleUp handles POST /api/groups/:groupId/settle
 func SettleUp(c *gin.Context) {
 	groupID := c.Param("groupId")
+	if _, ok := userCanAccessGroup(c, groupID); !ok {
+		return
+	}
 
 	var input struct {
 		FromMember int     `json:"fromMember" binding:"required"`
@@ -334,6 +347,9 @@ func SettleUp(c *gin.Context) {
 // GetPaymentHistory handles GET /api/groups/:groupId/settlements
 func GetPaymentHistory(c *gin.Context) {
 	groupID := c.Param("groupId")
+	if _, ok := userCanAccessGroup(c, groupID); !ok {
+		return
+	}
 	ctx := c.Request.Context()
 
 	rows, err := db.Query(ctx, `
@@ -375,4 +391,199 @@ func GetPaymentHistory(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, history)
+}
+
+// UpdateExpense handles PUT /api/expenses/:expenseId
+func UpdateExpense(c *gin.Context) {
+	expenseID := c.Param("expenseId")
+	ctx := c.Request.Context()
+
+	var input struct {
+		Description  string  `json:"description"`
+		Amount       float64 `json:"amount"`
+		PaidByID     int     `json:"paidById"`
+		SplitBetween []struct {
+			MemberID   int     `json:"memberId"   binding:"required"`
+			AmountOwed float64 `json:"amountOwed" binding:"required,gt=0"`
+		} `json:"splitBetween"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid input"})
+		return
+	}
+
+	// Get existing expense to validate group
+	var groupID int
+	err := db.QueryRow(ctx,
+		"SELECT group_id FROM expenses WHERE id=$1", expenseID,
+	).Scan(&groupID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "Expense not found"})
+		return
+	}
+	if _, ok := userCanAccessGroup(c, groupID); !ok {
+		return
+	}
+
+	// Update expense fields if provided
+	if input.Description != "" || input.Amount > 0 || input.PaidByID > 0 {
+		query := "UPDATE expenses SET "
+		args := []interface{}{}
+		argCount := 1
+
+		if input.Description != "" {
+			query += fmt.Sprintf("description=$%d, ", argCount)
+			args = append(args, input.Description)
+			argCount++
+		}
+		if input.Amount > 0 {
+			query += fmt.Sprintf("amount=$%d, ", argCount)
+			args = append(args, input.Amount)
+			argCount++
+		}
+		if input.PaidByID > 0 {
+			// Verify payer is in group
+			var exists bool
+			db.QueryRow(ctx,
+				"SELECT EXISTS(SELECT 1 FROM members WHERE id=$1 AND group_id=$2)",
+				input.PaidByID, groupID,
+			).Scan(&exists)
+			if !exists {
+				c.JSON(http.StatusBadRequest, gin.H{"message": "Payer is not a member of this group"})
+				return
+			}
+			query += fmt.Sprintf("paid_by_id=$%d, ", argCount)
+			args = append(args, input.PaidByID)
+			argCount++
+		}
+
+		// Remove trailing comma and add WHERE clause
+		if len(query) > 22 { // More than just "UPDATE expenses SET "
+			query = query[:len(query)-2] + fmt.Sprintf(" WHERE id=$%d", argCount)
+			args = append(args, expenseID)
+
+			_, err := db.Exec(ctx, query, args...)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"message": "Error updating expense"})
+				return
+			}
+		}
+	}
+
+	// Update splits if provided
+	if len(input.SplitBetween) > 0 {
+		// Verify amounts sum to total
+		var total float64
+		err := db.QueryRow(ctx, "SELECT amount FROM expenses WHERE id=$1", expenseID).Scan(&total)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Error fetching expense"})
+			return
+		}
+
+		var splitTotal float64
+		for _, s := range input.SplitBetween {
+			splitTotal += s.AmountOwed
+		}
+		if math.Abs(splitTotal-total) > 0.01 {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Sum of split amounts must equal total expense amount"})
+			return
+		}
+
+		// Delete old splits
+		_, err = db.Exec(ctx, "DELETE FROM expense_splits WHERE expense_id=$1", expenseID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Error updating splits"})
+			return
+		}
+
+		// Insert new splits
+		for _, s := range input.SplitBetween {
+			// Verify member is in group
+			var exists bool
+			db.QueryRow(ctx,
+				"SELECT EXISTS(SELECT 1 FROM members WHERE id=$1 AND group_id=$2)",
+				s.MemberID, groupID,
+			).Scan(&exists)
+			if !exists {
+				c.JSON(http.StatusBadRequest, gin.H{"message": "A member in splitBetween does not belong to this group"})
+				return
+			}
+
+			_, err = db.Exec(ctx, `
+				INSERT INTO expense_splits(expense_id, member_id, amount_owed)
+				VALUES($1, $2, $3)
+			`, expenseID, s.MemberID, s.AmountOwed)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"message": "Error saving expense split"})
+				return
+			}
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Expense updated successfully"})
+}
+
+// DeleteExpense handles DELETE /api/expenses/:expenseId
+func DeleteExpense(c *gin.Context) {
+	expenseID := c.Param("expenseId")
+	ctx := c.Request.Context()
+
+	// Check if expense exists
+	var groupID int
+	err := db.QueryRow(ctx,
+		"SELECT group_id FROM expenses WHERE id=$1", expenseID,
+	).Scan(&groupID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "Expense not found"})
+		return
+	}
+	if _, ok := userCanAccessGroup(c, groupID); !ok {
+		return
+	}
+
+	// Delete splits first
+	_, err = db.Exec(ctx, "DELETE FROM expense_splits WHERE expense_id=$1", expenseID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Error deleting expense splits"})
+		return
+	}
+
+	// Delete expense
+	_, err = db.Exec(ctx, "DELETE FROM expenses WHERE id=$1", expenseID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Error deleting expense"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Expense deleted successfully"})
+}
+
+// DeleteSettlement handles DELETE /api/groups/:groupId/settlements/:settlementId
+func DeleteSettlement(c *gin.Context) {
+	groupID := c.Param("groupId")
+	settlementID := c.Param("settlementId")
+	if _, ok := userCanAccessGroup(c, groupID); !ok {
+		return
+	}
+	ctx := c.Request.Context()
+
+	// Check if settlement exists and belongs to this group
+	var settlementExists bool
+	err := db.QueryRow(ctx,
+		"SELECT EXISTS(SELECT 1 FROM settlements WHERE id=$1 AND group_id=$2)", settlementID, groupID,
+	).Scan(&settlementExists)
+	if err != nil || !settlementExists {
+		c.JSON(http.StatusNotFound, gin.H{"message": "Settlement not found"})
+		return
+	}
+
+	// Delete settlement
+	_, err = db.Exec(ctx, "DELETE FROM settlements WHERE id=$1", settlementID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Error deleting settlement"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Settlement deleted successfully"})
 }
