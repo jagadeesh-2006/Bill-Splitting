@@ -31,7 +31,7 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
     return;
   }
 
-  // Basic phone check — digits only, 7–15 chars
+  // Basic phone check — digits only, 10 chars
   if (!/^\+?[0-9]{10}$/.test(phone)) {
     result.className = 'error';
     result.textContent = 'Enter a valid phone number (digits only, 10 chars).';

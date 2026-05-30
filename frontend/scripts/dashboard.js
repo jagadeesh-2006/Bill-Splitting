@@ -1,13 +1,13 @@
 const API = 'http://localhost:8080'; // ← change to your Go server address
 
-// ── AUTH CHECK ────────────────────────────────────────────────────────────
+//  AUTH CHECK 
 const userStr = localStorage.getItem('user');
 if (!userStr) { alert('Please login first'); window.location.href = 'login.html'; }
 const user = JSON.parse(userStr);
 const token = localStorage.getItem('token');
 document.getElementById('username').textContent = user.username;
 
-// ── TOAST ─────────────────────────────────────────────────────────────────
+//  TOAST 
 function toast(msg, type = 'success') {
   const el = document.getElementById('toast');
   el.textContent = msg;
@@ -16,18 +16,39 @@ function toast(msg, type = 'success') {
   el._t = setTimeout(() => el.className = '', 3000);
 }
 
-// ── AUTH HEADERS ──────────────────────────────────────────────────────────
+//  AUTH HEADERS 
 function authHeaders() {
   return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }; // 
 }
 
-// ── STATE ─────────────────────────────────────────────────────────────────
+function handleUnauthorized(res) {
+  if (res.status !== 401) return false;
+  localStorage.removeItem('user');
+  localStorage.removeItem('token');
+  alert('Session expired. Please log in again.');
+  window.location.href = 'login.html';
+  return true;
+}
+
+function buildEqualSplits(amount, members) {
+  const cents = Math.round(amount * 100);
+  const base = Math.floor(cents / members.length);
+  const remainder = cents % members.length;
+  if (base === 0) return null;
+
+  return members.map((member, index) => ({
+    memberId: member.id,
+    amountOwed: (base + (index < remainder ? 1 : 0)) / 100,
+  }));
+}
+
+//  STATE 
 let groups = [];
 let currentGroup = null;    // { id, name }
 let currentMembers = [];    // models.Member[]
 let currentExpenses = [];   // expense with splits[]
 
-// ── TABS ──────────────────────────────────────────────────────────────────
+//  TABS 
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -39,16 +60,10 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
   });
 });
 
-// ── LOAD GROUPS ───────────────────────────────────────────────────────────
+//  LOAD GROUPS 
 async function loadGroups() {
-  const res = await fetch(`${API}/api/groups/creator/${user.id}`, { headers: authHeaders() });
-   if (res.status === 401) {
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
-    alert('Session expired. Please log in again.');
-    window.location.href = 'login.html';
-    return;
-  }
+  const res = await fetch(`${API}/api/groups/mine`, { headers: authHeaders() });
+  if (handleUnauthorized(res)) return;
   if (!res.ok) { toast('Error loading groups', 'error'); return; }
   groups = await res.json() || [];
 
@@ -66,7 +81,7 @@ async function loadGroups() {
   });
 }
 
-// ── OPEN GROUP ────────────────────────────────────────────────────────────
+//  OPEN GROUP 
 async function openGroup(group) {
   currentGroup = group;
 
@@ -88,9 +103,10 @@ async function openGroup(group) {
   await Promise.all([loadMembers(), loadExpenses()]);
 }
 
-// ── LOAD MEMBERS ──────────────────────────────────────────────────────────
+//  LOAD MEMBERS 
 async function loadMembers() {
-  const res = await fetch(`${API}/api/groups/${currentGroup.id}/members`);
+  const res = await fetch(`${API}/api/groups/${currentGroup.id}/members`, { headers: authHeaders() });
+  if (handleUnauthorized(res)) return;
   if (!res.ok) { toast('Error loading members', 'error'); return; }
   currentMembers = await res.json() || [];
 
@@ -124,9 +140,10 @@ async function loadMembers() {
   renderSplitInputs(document.querySelector('input[name="split-type"]:checked')?.value || 'equal');
 }
 
-// ── LOAD EXPENSES ─────────────────────────────────────────────────────────
+//  LOAD EXPENSES 
 async function loadExpenses() {
-  const res = await fetch(`${API}/api/expenses/${currentGroup.id}`);
+  const res = await fetch(`${API}/api/expenses/${currentGroup.id}`, { headers: authHeaders() });
+  if (handleUnauthorized(res)) return;
   if (!res.ok) { toast('Error loading expenses', 'error'); return; }
   currentExpenses = await res.json() || [];
 
@@ -141,19 +158,28 @@ async function loadExpenses() {
     const payer = currentMembers.find(m => m.id === exp.paidById);
     const li = document.createElement('li');
     li.innerHTML = `
-          <div class="expense-info">
-            <span class="expense-desc">${exp.description}</span>
-            <span class="expense-meta">Paid by ${payer ? payer.name : 'Unknown'}</span>
+          <div class="expense-content">
+            <div class="expense-info">
+              <span class="expense-desc">${exp.description}</span>
+              <span class="expense-meta">Paid by ${payer ? payer.name : 'Unknown'}</span>
+            </div>
+            <span class="expense-amount">₹${exp.amount.toFixed(2)}</span>
           </div>
-          <span class="expense-amount">₹${exp.amount.toFixed(2)}</span>`;
+          <div class="action-buttons">
+            <button class="btn-icon edit" data-expense-id="${exp.id}" title="Edit expense">✎</button>
+            <button class="btn-icon delete" data-expense-id="${exp.id}" title="Delete expense">✕</button>
+          </div>`;
     ul.appendChild(li);
+    li.querySelector('.btn-icon.edit').addEventListener('click', () => editExpense(exp));
+    li.querySelector('.btn-icon.delete').addEventListener('click', () => deleteExpense(exp.id));
   });
 }
 
-// ── LOAD BALANCES ─────────────────────────────────────────────────────────
+//  LOAD BALANCES 
 async function loadBalances() {
   if (!currentGroup) return;
-  const res = await fetch(`${API}/api/groups/${currentGroup.id}/balances`);
+  const res = await fetch(`${API}/api/groups/${currentGroup.id}/balances`, { headers: authHeaders() });
+  if (handleUnauthorized(res)) return;
   if (!res.ok) { toast('Error loading balances', 'error'); return; }
   const balances = await res.json() || [];
 
@@ -178,10 +204,11 @@ async function loadBalances() {
   }
 }
 
-// ── LOAD HISTORY ──────────────────────────────────────────────────────────
+//  LOAD HISTORY 
 async function loadHistory() {
   if (!currentGroup) return;
-  const res = await fetch(`${API}/api/groups/${currentGroup.id}/settlements`);
+  const res = await fetch(`${API}/api/groups/${currentGroup.id}/settlements`, { headers: authHeaders() });
+  if (handleUnauthorized(res)) return;
   if (!res.ok) { toast('Error loading history', 'error'); return; }
   const history = await res.json() || [];
 
@@ -206,12 +233,79 @@ async function loadHistory() {
             <div class="history-amount">₹${s.amount.toFixed(2)}</div>
             ${s.note ? `<div class="history-note">${s.note}</div>` : ''}
             <div class="history-date">${date}</div>
-          </div>`;
+          </div>
+          <button class="btn-icon delete" data-settlement-id="${s.id}" title="Delete settlement">✕</button>`;
     container.appendChild(item);
+    item.querySelector('.btn-icon.delete').addEventListener('click', () => deleteSettlement(s.id));
   });
 }
 
-// ── SPLIT INPUTS ──────────────────────────────────────────────────────────
+async function editExpense(expense) {
+  const description = prompt('Update description', expense.description);
+  if (description === null) return;
+
+  const trimmed = description.trim();
+  if (!trimmed) {
+    toast('Description is required', 'error');
+    return;
+  }
+
+  const res = await fetch(`${API}/api/expenses/${expense.id}`, {
+    method: 'PUT',
+    headers: authHeaders(),
+    body: JSON.stringify({ description: trimmed }),
+  });
+  if (handleUnauthorized(res)) return;
+
+  if (!res.ok) {
+    const data = await res.json();
+    toast(data.message || 'Failed to update expense', 'error');
+    return;
+  }
+
+  toast('Expense updated!');
+  await loadExpenses();
+}
+
+async function deleteExpense(expenseId) {
+  if (!confirm('Delete this expense?')) return;
+
+  const res = await fetch(`${API}/api/expenses/${expenseId}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  if (handleUnauthorized(res)) return;
+
+  if (!res.ok) {
+    const data = await res.json();
+    toast(data.message || 'Failed to delete expense', 'error');
+    return;
+  }
+
+  toast('Expense deleted!');
+  await Promise.all([loadExpenses(), loadBalances()]);
+}
+
+async function deleteSettlement(settlementId) {
+  if (!confirm('Delete this settlement?')) return;
+
+  const res = await fetch(`${API}/api/groups/${currentGroup.id}/settlements/${settlementId}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  if (handleUnauthorized(res)) return;
+
+  if (!res.ok) {
+    const data = await res.json();
+    toast(data.message || 'Failed to delete settlement', 'error');
+    return;
+  }
+
+  toast('Settlement deleted!');
+  await Promise.all([loadBalances(), loadHistory()]);
+}
+
+//  SPLIT INPUTS 
 function renderSplitInputs(splitType) {
   const container = document.getElementById('split-inputs');
   container.innerHTML = '';
@@ -234,7 +328,7 @@ document.querySelectorAll('input[name="split-type"]').forEach(r => {
   r.addEventListener('change', e => renderSplitInputs(e.target.value));
 });
 
-// ── ADD EXPENSE FORM ──────────────────────────────────────────────────────
+//  ADD EXPENSE FORM 
 document.getElementById('expense-form').addEventListener('submit', async e => {
   e.preventDefault();
   if (!currentGroup) return;
@@ -247,12 +341,17 @@ document.getElementById('expense-form').addEventListener('submit', async e => {
   if (!description || isNaN(amount) || amount <= 0) {
     toast('Please fill all fields', 'error'); return;
   }
+  if (currentMembers.length === 0) {
+    toast('Add members before adding an expense', 'error'); return;
+  }
 
   let splitBetween = [];
 
   if (splitType === 'equal') {
-    const share = parseFloat((amount / currentMembers.length).toFixed(2));
-    splitBetween = currentMembers.map(m => ({ memberId: m.id, amountOwed: share }));
+    splitBetween = buildEqualSplits(amount, currentMembers);
+    if (!splitBetween) {
+      toast('Amount is too small to split between all members', 'error'); return;
+    }
   } else if (splitType === 'percentage') {
     let total = 0;
     for (const m of currentMembers) {
@@ -282,9 +381,9 @@ document.getElementById('expense-form').addEventListener('submit', async e => {
     headers: authHeaders(),
     body: JSON.stringify({ groupId: currentGroup.id, description, amount, paidById, splitBetween }),
   });
-
   btn.disabled = false;
   btn.textContent = 'Add Expense';
+  if (handleUnauthorized(res)) return;
 
   if (!res.ok) {
     const d = await res.json();
@@ -303,7 +402,7 @@ document.getElementById('expense-form').addEventListener('submit', async e => {
   document.getElementById('tab-overview').classList.add('active');
 });
 
-// ── SETTLE UP FORM ────────────────────────────────────────────────────────
+//  SETTLE UP FORM 
 document.getElementById('settle-form').addEventListener('submit', async e => {
   e.preventDefault();
   if (!currentGroup) return;
@@ -325,9 +424,9 @@ document.getElementById('settle-form').addEventListener('submit', async e => {
     headers: authHeaders(),
     body: JSON.stringify({ fromMember, toMember, amount, note }),
   });
-
   btn.disabled = false;
   btn.textContent = 'Record Settlement';
+  if (handleUnauthorized(res)) return;
 
   if (!res.ok) {
     const d = await res.json();
@@ -339,7 +438,7 @@ document.getElementById('settle-form').addEventListener('submit', async e => {
   await Promise.all([loadBalances(), loadHistory()]);
 });
 
-// ── MEMBER INPUT ROWS (create group form) ─────────────────────────────────
+//  MEMBER INPUT ROWS (create group form) 
 let memberRowCount = 0;
 
 function addMemberRow(name = '', phone = '') {
@@ -366,7 +465,7 @@ document.getElementById('add-member-btn').addEventListener('click', () => addMem
 // Start with 2 empty rows
 addMemberRow(); addMemberRow();
 
-// ── CREATE GROUP FORM ─────────────────────────────────────────────────────
+//  CREATE GROUP FORM 
 document.getElementById('group-form').addEventListener('submit', async e => {
   e.preventDefault();
 
@@ -393,9 +492,9 @@ document.getElementById('group-form').addEventListener('submit', async e => {
     headers: authHeaders(),
     body: JSON.stringify({ name, members }),
   });
-
   btn.disabled = false;
   btn.textContent = 'Create group';
+  if (handleUnauthorized(res)) return;
 
   if (!res.ok) {
     const d = await res.json();
@@ -410,7 +509,7 @@ document.getElementById('group-form').addEventListener('submit', async e => {
   await loadGroups();
 });
 
-// ── BACK BUTTON ───────────────────────────────────────────────────────────
+//  BACK BUTTON 
 document.getElementById('back-btn').addEventListener('click', () => {
   document.getElementById('group-detail').style.display = 'none';
   document.getElementById('empty-state').style.display = 'flex';
@@ -418,12 +517,12 @@ document.getElementById('back-btn').addEventListener('click', () => {
   currentGroup = null;
 });
 
-// ── LOGOUT ────────────────────────────────────────────────────────────────
+//  LOGOUT 
 document.getElementById('logout-btn').addEventListener('click', () => {
   localStorage.removeItem('user');
   localStorage.removeItem('token');
   window.location.href = 'login.html';
 });
 
-// ── INIT ──────────────────────────────────────────────────────────────────
+//  INIT 
 loadGroups();

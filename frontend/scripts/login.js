@@ -55,7 +55,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
 
   } catch (err) {
     result.className = 'error';
-    result.textContent = 'Could not reach server. Is it running?';
+    result.textContent = 'Could not reach server.';
   } finally {
     btn.textContent = 'Log in';
     btn.disabled = false;
