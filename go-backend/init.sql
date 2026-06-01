@@ -54,3 +54,22 @@ CREATE TABLE IF NOT EXISTS settlements (
     note        TEXT    NOT NULL DEFAULT '',
     paid_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Payments: Track online payments for settlements
+CREATE TABLE IF NOT EXISTS payments (
+    id                  SERIAL PRIMARY KEY,
+    settlement_id       INT     NOT NULL REFERENCES settlements(id) ON DELETE CASCADE,
+    amount              NUMERIC(10,2) NOT NULL,
+    currency            TEXT    NOT NULL DEFAULT 'INR',
+    gateway             TEXT    NOT NULL, -- razorpay, stripe, phonepay, googlepay
+    gateway_order_id    TEXT    NOT NULL,
+    gateway_payment_id  TEXT,
+    status              TEXT    NOT NULL DEFAULT 'pending', -- pending, success, failed, cancelled, refunded
+    payment_method      TEXT,  -- card, upi, wallet, etc
+    receipt             TEXT,
+    error_message       TEXT,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    paid_at             TIMESTAMPTZ,
+    UNIQUE(gateway, gateway_order_id)
+);
