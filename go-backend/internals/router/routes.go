@@ -8,15 +8,15 @@ import (
 
 func SetupRoutes(r *gin.Engine) {
 
-	//  PUBLIC ROUTES 
+	//  PUBLIC ROUTES
 	r.POST("/api/register", handlers.RegisterUser)
 	r.POST("/api/login", handlers.LoginUser)
 
-	// PROTECTED ROUTES 
+	// PROTECTED ROUTES
 	auth := r.Group("/api")
 	auth.Use(middlewares.AuthMiddleware())
 	{
-		// Groups 
+		// Groups
 		auth.GET("/groups/mine", handlers.GetUserGroups)
 		auth.GET("/groups/:groupId", handlers.GetGroupByID)
 		auth.POST("/groups", handlers.CreateGroup)
@@ -40,6 +40,13 @@ func SetupRoutes(r *gin.Engine) {
 		auth.GET("/groups/:groupId/settlements", handlers.GetPaymentHistory)
 		auth.POST("/groups/:groupId/settle", handlers.SettleUp)
 		auth.DELETE("/groups/:groupId/settlements/:settlementId", handlers.DeleteSettlement)
+
+		// Payments
+		auth.POST("/payments/initiate", handlers.InitiatePayment)
+		auth.POST("/payments/verify", handlers.VerifyPayment)
+		auth.GET("/groups/:groupId/payments", handlers.GetPaymentsByGroup)
+		auth.GET("/payments/:paymentId", handlers.GetPaymentByID)
+		auth.POST("/payments/:paymentId/refund", handlers.RefundPayment)
 
 		// Users
 		auth.GET("/users", handlers.GetAllUsers)
