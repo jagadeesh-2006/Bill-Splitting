@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pay Settlement - Bill Splitting</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .payment-container {
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .payment-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .payment-amount {
+            font-size: 36px;
+            font-weight: bold;
+            color: #27ae60;
+            margin: 20px 0;
+        }
+
+        .payment-details {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+
+        .gateway-selector {
+            margin: 20px 0;
+        }
+
+        .gateway-selector label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .gateway-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .gateway-option {
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .gateway-option:hover {
+            border-color: #27ae60;
+            background: #f0f8f5;
+        }
+
+        .gateway-option input[type="radio"] {
+            margin-right: 10px;
+        }
+
+        .gateway-option.selected {
+            border-color: #27ae60;
+            background: #e8f8f1;
+            font-weight: bold;
+        }
+
+        .form-group {
+            margin: 15px 0;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #27ae60;
+            box-shadow: 0 0 5px rgba(39, 174, 96, 0.3);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #229954;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(39, 174, 96, 0.3);
+        }
+
+        .btn-primary:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #ecf0f1;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #d5dbdb;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #27ae60;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 4px;
+            margin: 10px 0;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 12px;
+            border-radius: 4px;
+            margin: 10px 0;
+            display: none;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+
+        .gateway-info {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 600px) {
+            .payment-container {
+                margin: 10px;
+            }
+
+            .gateway-options {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="payment-container">
+        <div class="payment-header">
+            <h1>Payment</h1>
+            <p>Complete your settlement payment</p>
+        </div>
+
+        <div class="payment-details">
+            <div class="detail-row">
+                <span>Payee:</span>
+                <span id="payeeName">-</span>
+            </div>
+            <div class="detail-row">
+                <span>Amount:</span>
+                <span id="settlementAmount">-</span>
+            </div>
+            <div class="detail-row">
+                <span>Currency:</span>
+                <span id="currency">INR</span>
+            </div>
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+        <div class="success-message" id="successMessage"></div>
+
+        <form id="paymentForm">
+            <div class="form-group">
+                <label for="email">Email Address *</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+
+            <div class="form-group">
+                <label for="name">Full Name *</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+
+            <div class="form-group">
+                <label for="phone">Phone Number *</label>
+                <input type="tel" id="phone" name="phone" required>
+            </div>
+
+            <div class="gateway-selector">
+                <label>Select Payment Method *</label>
+                <div class="gateway-options">
+                    <div class="gateway-option">
+                        <input type="radio" id="razorpay" name="gateway" value="razorpay" checked>
+                        <label for="razorpay">Razorpay</label>
+                        <div class="gateway-info">Cards, UPI, Wallets</div>
+                    </div>
+                    <div class="gateway-option">
+                        <input type="radio" id="stripe" name="gateway" value="stripe">
+                        <label for="stripe">Stripe</label>
+                        <div class="gateway-info">International Cards</div>
+                    </div>
+                    <div class="gateway-option">
+                        <input type="radio" id="phonepay" name="gateway" value="phonepay">
+                        <label for="phonepay">PhonePay</label>
+                        <div class="gateway-info">Mobile Wallets</div>
+                    </div>
+                    <div class="gateway-option">
+                        <input type="radio" id="googlepay" name="gateway" value="googlepay">
+                        <label for="googlepay">Google Pay</label>
+                        <div class="gateway-info">Google Account</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button type="button" class="btn btn-secondary" onclick="goBack()">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="payBtn">Pay Now</button>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Processing payment...</p>
+            </div>
+        </form>
+    </div>
+
+    <!-- Razorpay Script -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+    <script>
+        // Get settlement ID from URL params
+        const params = new URLSearchParams(window.location.search);
+        const settlementID = params.get('settlementId');
+        const groupID = params.get('groupId');
+
+        let paymentOrderData = null;
+
+        // Initialize form
+        document.addEventListener('DOMContentLoaded', function () {
+            loadSettlementDetails();
+            setupGatewaySelection();
+        });
+
+        // Load settlement details
+        async function loadSettlementDetails() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/groups/${groupID}/settlements`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to load settlements');
+
+                const data = await response.json();
+                const settlement = data.find(s => s.id == settlementID);
+
+                if (settlement) {
+                    document.getElementById('settlementAmount').textContent = `₹${settlement.amount.toFixed(2)}`;
+                    document.getElementById('payeeName').textContent = settlement.to_member_name || 'Member';
+                }
+            } catch (error) {
+                showError('Failed to load settlement details');
+            }
+        }
+
+        // Setup gateway selection UI
+        function setupGatewaySelection() {
+            const options = document.querySelectorAll('.gateway-option');
+            const radios = document.querySelectorAll('input[name="gateway"]');
+
+            options.forEach(option => {
+                option.addEventListener('click', function () {
+                    options.forEach(opt => opt.classList.remove('selected'));
+                    this.classList.add('selected');
+                    this.querySelector('input[type="radio"]').checked = true;
+                });
+            });
+
+            radios.forEach(radio => {
+                if (radio.checked) {
+                    radio.parentElement.classList.add('selected');
+                }
+            });
+        }
+
+        // Form submission
+        document.getElementById('paymentForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            await initiatePayment();
+        });
+
+        // Initiate payment
+        async function initiatePayment() {
+            const email = document.getElementById('email').value;
+            const name = document.getElementById('name').value;
+            const phone = document.getElementById('phone').value;
+            const gateway = document.querySelector('input[name="gateway"]:checked').value;
+
+            const amount = parseFloat(document.getElementById('settlementAmount').textContent.replace('₹', ''));
+
+            try {
+                showLoading(true);
+                clearMessages();
+
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/payments/initiate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        settlementId: parseInt(settlementID),
+                        amount: amount,
+                        currency: 'INR',
+                        gateway: gateway,
+                        email: email,
+                        phone: phone,
+                        name: name
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to initiate payment');
+                }
+
+                paymentOrderData = await response.json();
+
+                // Route to appropriate payment gateway
+                switch (gateway) {
+                    case 'razorpay':
+                        showRazorpayCheckout();
+                        break;
+                    case 'stripe':
+                        showStripeCheckout();
+                        break;
+                    case 'phonepay':
+                        showPhonePayCheckout();
+                        break;
+                    case 'googlepay':
+                        showGooglePayCheckout();
+                        break;
+                }
+            } catch (error) {
+                showError(error.message);
+                showLoading(false);
+            }
+        }
+
+        // Razorpay Checkout
+        function showRazorpayCheckout() {
+            const options = {
+                key: paymentOrderData.key,
+                amount: paymentOrderData.amount * 100, // Convert to paise
+                currency: paymentOrderData.currency,
+                name: "Bill Splitting Settlement",
+                description: "Payment for expense settlement",
+                order_id: paymentOrderData.orderId,
+                handler: function (response) {
+                    verifyPayment(response);
+                },
+                prefill: {
+                    name: document.getElementById('name').value,
+                    email: document.getElementById('email').value,
+                    contact: document.getElementById('phone').value
+                },
+                theme: {
+                    color: "#27ae60"
+                }
+            };
+
+            const rzp1 = new Razorpay(options);
+            rzp1.open();
+            showLoading(false);
+        }
+
+        // Stripe Checkout (stub - implement with Stripe.js library)
+        function showStripeCheckout() {
+            showError('Stripe payment is being implemented. Please use Razorpay for now.');
+            showLoading(false);
+        }
+
+        // PhonePay Checkout (stub)
+        function showPhonePayCheckout() {
+            showError('PhonePay is being implemented. Please use Razorpay for now.');
+            showLoading(false);
+        }
+
+        // Google Pay Checkout (stub)
+        function showGooglePayCheckout() {
+            showError('Google Pay is being implemented. Please use Razorpay for now.');
+            showLoading(false);
+        }
+
+        // Verify payment
+        async function verifyPayment(response) {
+            try {
+                showLoading(true);
+
+                const token = localStorage.getItem('token');
+                const verifyResponse = await fetch('/api/payments/verify', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        razorpay_order_id: paymentOrderData.orderId,
+                        razorpay_payment_id: response.razorpay_payment_id,
+                        razorpay_signature: response.razorpay_signature
+                    })
+                });
+
+                if (!verifyResponse.ok) {
+                    const error = await verifyResponse.json();
+                    throw new Error(error.error || 'Payment verification failed');
+                }
+
+                showSuccess('Payment successful! Settlement has been recorded.');
+                setTimeout(() => {
+                    window.location.href = `/dashboard.html?groupId=${groupID}`;
+                }, 2000);
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // UI Helpers
+        function showLoading(show) {
+            document.getElementById('loading').classList.toggle('active', show);
+            document.getElementById('payBtn').disabled = show;
+        }
+
+        function showError(message) {
+            const errorEl = document.getElementById('errorMessage');
+            errorEl.textContent = message;
+            errorEl.classList.add('show');
+        }
+
+        function showSuccess(message) {
+            const successEl = document.getElementById('successMessage');
+            successEl.textContent = message;
+            successEl.classList.add('show');
+        }
+
+        function clearMessages() {
+            document.getElementById('errorMessage').classList.remove('show');
+            document.getElementById('successMessage').classList.remove('show');
+        }
+
+        function goBack() {
+            window.history.back();
+        }
+    </script>
+</body>
+
+</html>
